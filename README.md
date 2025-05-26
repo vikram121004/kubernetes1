@@ -1,93 +1,56 @@
-Minikube Installation Guide for Ubuntu
-This guide provides step-by-step instructions for installing Minikube on Ubuntu. Minikube allows you to run a single-node Kubernetes cluster locally for development and testing purposes.
+sudo su
+apt update -y
+apt install docker.io -y
+systemctl start docker
+systemctl enable docker
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+apt update -y  
+apt install kubeadm=1.20.0-00 kubectl=1.20.0-00 kubelet=1.20.0-00 -y
 
-Pre-requisites
-Ubuntu OS
-sudo privileges
-Internet access
-Virtualization support enabled (Check with egrep -c '(vmx|svm)' /proc/cpuinfo, 0=disabled 1=enabled)
-Step 1: Update System Packages
-Update your package lists to make sure you are getting the latest version and dependencies.
-
-
-
-sudo apt update
-image
+=== yaha master node pe ham jab kubernets ko initialize krte he to 4 componentes aa jyenge = (controler manzer, scheduler, API server, etcd) is me actual servies aye gi (contener nhi aye ga)
+kubeadm init
 
 
 
-Step 2: Install Required Packages
-Install some basic required packages.
+sudo kubeadm init
 
-sudo apt install -y curl wget apt-transport-https
-image
+=======  Set Up Local kubeconfig:
 
-
-
-Step 3: Install Docker
-Minikube can run a Kubernetes cluster either in a VM or locally via Docker. This guide demonstrates the Docker method.
-
-sudo apt install -y docker.io
-image
-
-Start and enable Docker.
-
-sudo systemctl enable --now docker
-Add current user to docker group (To use docker without root)
-
-sudo usermod -aG docker $USER && newgrp docker
-Now, logout (use exit command) and connect again.
+mkdir -p "$HOME"/.kube
+sudo cp -i /etc/kubernetes/admin.conf "$HOME"/.kube/config
+sudo chown "$(id -u)":"$(id -g)" "$HOME"/.kube/config 
 
 
+=========  Install a Network Plugin (Calico):
 
-Step 4: Install Minikube
-First, download the Minikube binary using curl:
-
-
-
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-Make it executable and move it into your path:
-
-chmod +x minikube
-sudo mv minikube /usr/local/bin/
-image
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/calico.yaml
 
 
+========Generate Join Command:
 
-Step 5: Install kubectl
-Download kubectl, which is a Kubernetes command-line tool.
+kubeadm token create --print-join-command                  
+                                                       (command chalane ke bad hame yaha 1 token mile ga use worker node pe chalana hoga jis se (node) create kiya he our us node ko master ke saath connect krne se cluster ban gya he & hame end me (--v=5) ye hamara version he or ye version pe hi chalta he  ye ham worker node pe key likhte saye end me lkhe ge then fir (6443) likh denge& hame master me jake security me (6443) chala dena he
 
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-Check above image ⬆️ Make it executable and move it into your path:
+                                                       
+********                                 Execute on ALL of your Worker Nodes
 
-chmod +x kubectl
-sudo mv kubectl /usr/local/bin/
-image
+======Perform pre-flight checks:
+
+sudo kubeadm reset pre-flight checks
+
+========Paste the join command you got from the master node and append --v=5 at the end:
+
+sudo kubeadm join <private-ip-of-control-plane>:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash> --cri-socket 
+"unix:///run/containerd/containerd.sock" --v=5
 
 
-Step 6: Start Minikube
-Now, you can start Minikube with the following command:
+======Add sudo at the beginning of the command
+======Add --v=5 at the end
+======Example format:
 
-minikube start --driver=docker --vm=true 
-This command will start a single-node Kubernetes cluster inside a Docker container.
+sudo <paste-join-command-here> --v=5
 
-Step 7: Check Cluster Status
-Check the cluster status with:
-
-minikube status
-image
-
-You can also use kubectl to interact with your cluster:
+                                     Verify Cluster Connection
+                                           On Master Node:
 
 kubectl get nodes
-Step 8: Stop Minikube
-When you are done, you can stop the Minikube cluster with:
-
-minikube stop
-Optional: Delete Minikube Cluster
-If you wish to delete the Minikube cluster entirely, you can do so with:
-
-minikube delete
-That's it! You've successfully installed Minikube on Ubuntu, and you can now start deploying Kubernetes applications for development and testing.
-
-kubestarter/minikube_installation.md at main · LondheShubham153/kubestarter 
